@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: portoflip-app
+    container_name: portoflip_app
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+      - "5173:5173" # Vite Dev Server
+    volumes:
+      - .:/var/www/html
+    environment:
+      - DB_CONNECTION=pgsql
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_DATABASE=${DB_DATABASE:-portoflip}
+      - DB_USERNAME=${DB_USERNAME:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-12345678}
+    depends_on:
+      - db
+    networks:
+      - portoflip_network
+
+  db:
+    image: postgres:15-alpine
+    container_name: portoflip_db
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-portoflip}
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-12345678}
+    volumes:
+      - portoflip_pg_data:/var/lib/postgresql/data
+    networks:
+      - portoflip_network
+
+networks:
+  portoflip_network:
+    driver: bridge
+
+volumes:
+  portoflip_pg_data:
