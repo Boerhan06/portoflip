@@ -3,7 +3,6 @@
 ```markdown
 # 🎬 Portoflip
 
-
 Portoflip adalah platform manajemen portofolio dan sistem pemesanan (*booking*) jasa profesional. Aplikasi ini dirancang untuk menampilkan karya visual dengan estetika sinematik, sekaligus memudahkan klien dalam melakukan pemesanan jadwal dan pembayaran terintegrasi.
 
 Repositori ini berisi kode sumber untuk **Backend API** dan **Frontend Web (Landing Page & Dashboard)**. Untuk ekosistem aplikasi Android dan Desktop, pengembangannya dilakukan pada repositori terpisah.
