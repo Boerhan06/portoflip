@@ -18,8 +18,17 @@ class BookingController extends Controller
     {
         $servicePackages = ServicePackage::all();
         
+        $bookedDates = Booking::whereIn('payment_status', ['pending', 'paid'])
+            ->where('booking_date', '>=', now()->startOfDay())
+            ->get()
+            ->map(fn($booking) => $booking->booking_date->toDateString())
+            ->unique()
+            ->values()
+            ->toArray();
+
         return Inertia::render('Booking/Form', [
-            'servicePackages' => $servicePackages
+            'servicePackages' => $servicePackages,
+            'bookedDates' => $bookedDates
         ]);
     }
 
@@ -50,7 +59,20 @@ class BookingController extends Controller
         // Mengembalikan redirect (karena menggunakan Inertia) dengan flash session
         return redirect()->back()->with([
             'message' => 'Booking berhasil dibuat',
-            'snap_token' => $snapToken
+            'snap_token' => $snapToken,
+            'booking_id' => $booking->id
+        ]);
+    }
+
+    /**
+     * Show the digital invoice or ticket for a booking.
+     */
+    public function showInvoice(Booking $booking)
+    {
+        $booking->load('servicePackage');
+        
+        return Inertia::render('Booking/Invoice', [
+            'booking' => $booking
         ]);
     }
 }

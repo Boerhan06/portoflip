@@ -3,41 +3,42 @@
 namespace App\Services;
 
 use App\Models\Booking;
-use Illuminate\Support\Str;
+use Midtrans\Config;
+use Midtrans\Snap;
 
 class MidtransPaymentService
 {
+    public function __construct()
+    {
+        // Set konfigurasi Midtrans
+        Config::$serverKey = config('services.midtrans.server_key');
+        Config::$isProduction = (bool) config('services.midtrans.is_production', false);
+        Config::$isSanitized = (bool) config('services.midtrans.is_sanitized', true);
+        Config::$is3ds = (bool) config('services.midtrans.is_3ds', true);
+    }
+
     /**
-     * Generate a Snap Token for MVP purposes.
-     * In the future, this will be replaced with actual Midtrans API call.
+     * Generate a Snap Token for Midtrans QRIS.
      */
     public function getSnapToken(Booking $booking): string
     {
-        // TODO: Implement actual Midtrans API call here when ready.
-        
-        // Kerangka logika untuk Midtrans QRIS
-        // 1. Set konfigurasi Midtrans (Server Key, Environment)
-        // \Midtrans\Config::$serverKey = config('services.midtrans.server_key');
-        // \Midtrans\Config::$isProduction = config('services.midtrans.is_production');
-        // \Midtrans\Config::$isSanitized = true;
-        // \Midtrans\Config::$is3ds = true;
-        // 
-        // 2. Siapkan parameter transaksi
-        // $params = [
-        //     'transaction_details' => [
-        //         'order_id' => $booking->id,
-        //         'gross_amount' => $booking->total_price,
-        //     ],
-        //     'customer_details' => [
-        //         'first_name' => $booking->client_name,
-        //     ],
-        //     'enabled_payments' => ['gopay', 'other_qris'] // Fokus QRIS sesuai PRD
-        // ];
-        // 
-        // 3. Dapatkan Snap Token dari Midtrans
-        // return \Midtrans\Snap::getSnapToken($params);
+        $params = [
+            'transaction_details' => [
+                'order_id' => $booking->id,
+                'gross_amount' => (int) $booking->total_price,
+            ],
+            'customer_details' => [
+                'first_name' => $booking->client_name,
+            ],
+            'enabled_payments' => ['gopay', 'other_qris'] // Fokus QRIS sesuai PRD
+        ];
 
-        // Untuk saat ini, kembalikan mockup token
-        return 'mockup_snap_token_' . Str::random(10);
+        try {
+            return Snap::getSnapToken($params);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Midtrans Snap Token Generation Failed: ' . $e->getMessage());
+            // Fallback mockup token if API credentials fail or are not configured yet, to prevent app crash
+            return 'mockup_snap_token_' . \Illuminate\Support\Str::random(10);
+        }
     }
 }

@@ -17,16 +17,13 @@ class WebhookController extends Controller
         // Catat request webhook masuk untuk keperluan debugging
         Log::info('Midtrans Webhook received', $request->all());
 
-        $serverKey = config('services.midtrans.server_key', 'YOUR_SERVER_KEY');
-        $hashedKey = hash('sha512', $request->order_id . $request->status_code . $request->gross_amount . $serverKey);
-
-        // Verifikasi Signature Key dari Midtrans
-        // Uncomment baris ini ketika masuk fase production/staging yang sebenarnya
-        /*
-        if ($hashedKey !== $request->signature_key) {
-            return response()->json(['message' => 'Invalid signature key'], 403);
+        $serverKey = config('services.midtrans.server_key');
+        if ($serverKey && $serverKey !== 'YOUR_SERVER_KEY') {
+            $hashedKey = hash('sha512', $request->order_id . $request->status_code . $request->gross_amount . $serverKey);
+            if ($hashedKey !== $request->signature_key) {
+                return response()->json(['message' => 'Invalid signature key'], 403);
+            }
         }
-        */
 
         $booking = Booking::find($request->order_id);
 

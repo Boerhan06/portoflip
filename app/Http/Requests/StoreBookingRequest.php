@@ -24,7 +24,20 @@ class StoreBookingRequest extends FormRequest
     {
         return [
             'client_name' => ['required', 'string', 'max:255'],
-            'booking_date' => ['required', 'date', 'after:today'],
+            'booking_date' => [
+                'required',
+                'date',
+                'after:today',
+                function ($attribute, $value, $fail) {
+                    $date = \Carbon\Carbon::parse($value)->toDateString();
+                    $exists = \App\Models\Booking::whereDate('booking_date', $date)
+                        ->whereIn('payment_status', ['pending', 'paid'])
+                        ->exists();
+                    if ($exists) {
+                        $fail('Tanggal yang dipilih sudah di-booking oleh klien lain. Silakan pilih tanggal lain.');
+                    }
+                }
+            ],
             'service_package_id' => ['required', 'uuid', 'exists:service_packages,id'],
         ];
     }

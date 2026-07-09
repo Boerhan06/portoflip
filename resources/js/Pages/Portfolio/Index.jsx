@@ -1,7 +1,12 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Head, Link } from '@inertiajs/react';
+import axios from 'axios';
 
 export default function Index({ portfolios }) {
+    const [items, setItems] = useState(portfolios.data || []);
+    const [nextPageUrl, setNextPageUrl] = useState(portfolios.next_page_url || null);
+    const [loading, setLoading] = useState(false);
+
     // Pola grid asimetris (Masonry-like illusion menggunakan CSS Grid Tailwind)
     const getGridSpan = (index) => {
         const pattern = [
@@ -14,6 +19,44 @@ export default function Index({ portfolios }) {
         ];
         return pattern[index % pattern.length];
     };
+
+    const loadMore = () => {
+        if (!nextPageUrl || loading) return;
+        setLoading(true);
+
+        axios.get(nextPageUrl, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => {
+            const data = response.data;
+            setItems(prev => [...prev, ...(data.data || [])]);
+            setNextPageUrl(data.next_page_url || null);
+        })
+        .catch(err => {
+            console.error("Gagal memuat karya lainnya:", err);
+        })
+        .finally(() => {
+            setLoading(false);
+        });
+    };
+
+    // Auto load on scroll near bottom
+    useEffect(() => {
+        const handleScroll = () => {
+            if (!nextPageUrl || loading) return;
+            
+            // Cek jika scroll mendekati bagian bawah layar (dalam 200px)
+            if (window.innerHeight + document.documentElement.scrollTop >= document.documentElement.offsetHeight - 200) {
+                loadMore();
+            }
+        };
+
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, [nextPageUrl, loading]);
 
     return (
         <div className="min-h-screen bg-black text-zinc-100 font-sans selection:bg-zinc-800">
@@ -48,7 +91,7 @@ export default function Index({ portfolios }) {
             {/* Asymmetrical Gallery Grid */}
             <section className="px-8 pb-32 max-w-7xl mx-auto">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 auto-rows-[300px]">
-                    {portfolios.map((portfolio, index) => (
+                    {items.map((portfolio, index) => (
                         <div 
                             key={portfolio.id} 
                             className={`group relative overflow-hidden rounded-3xl bg-white/5 border border-white/10 transition-all duration-700 hover:border-white/20 ${getGridSpan(index)}`}
@@ -79,7 +122,20 @@ export default function Index({ portfolios }) {
                     ))}
                 </div>
 
-                {portfolios.length === 0 && (
+                {/* Loading Indicator / Load More Button */}
+                {nextPageUrl && (
+                    <div className="text-center mt-16">
+                        <button 
+                            onClick={loadMore}
+                            disabled={loading}
+                            className="px-8 py-4 border border-white/10 hover:border-white/20 rounded-full text-xs uppercase tracking-widest text-zinc-400 hover:text-white transition-colors bg-white/5 disabled:opacity-50"
+                        >
+                            {loading ? 'Loading More Visuals...' : 'Load More Works'}
+                        </button>
+                    </div>
+                )}
+
+                {items.length === 0 && (
                     <div className="text-center py-32 border border-white/5 rounded-3xl bg-white/[0.02] backdrop-blur-sm">
                         <p className="text-zinc-500 font-light tracking-widest uppercase">Belum ada karya yang dipublikasikan.</p>
                     </div>

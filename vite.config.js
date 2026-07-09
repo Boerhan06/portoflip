@@ -13,7 +13,7 @@ export default defineConfig({
         tailwindcss(),
     ],
     server: {
-        host: '0.0.0.0', // Allow external connections for Docker
+        host: '127.0.0.1', // Use local host to avoid 0.0.0.0 resolution error
         watch: {
             ignored: ['**/storage/framework/views/**'],
         },
